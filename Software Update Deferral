@@ -1,0 +1,154 @@
+#Created By - Harshit
+#Version  - 1.0
+#!/bin/bash
+
+
+
+#set deferral counter to zero
+deferral=0
+
+#set max amount of deferments a users can make(Use N-1 Deferrals because Last deferral will be final one)
+maxdeferrals=6
+
+#Choice bydefault value
+choice="2"
+
+#Edit title that you want displayed in the pop up window
+TITLE="OS Upgrade-WARNING 1"
+TITLE1="OS Upgrade-WARNING 2"
+TITLE2="OS Upgrade-WARNING 3"
+TITLE3="OS Upgrade-WARNING 4"
+TITLE4="OS Upgrade-WARNING 5"
+TITLE5="OS Upgrade-WARNING 6"
+
+#Edit the msg that you want displayed in the pop up window
+MSG=' Use this area to describe the message to the user.  '
+
+##-----------
+
+## Path to the deferral options folder
+deferralOptions="/Users/Shared/DeferralOptions"
+
+## Path to the deferral counter file
+deferralCount="${deferralOptions}/deferralCount.txt"
+
+if [ ! -d "$deferralOptions" ]; then
+    mkdir -p "$deferralOptions"
+fi
+
+
+#Final Message to the User before upgrade 
+#Edit the below title and msg that you want displayed in the pop up window during final Prompt.
+
+FINALTITLE="OS Upgrade- FINAL WARNING"
+
+FINALICON="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertStopIcon.icns"
+
+FINALMSG='Dear User as you exceeded the timeline to defer the upgrade, The machine will start the upgrade in next 15 minutes.
+1. CLOSE ALL APPLICATIONS AND SAVE ANY OPEN WORK. 
+
+2. MAKE SURE YOUR MAC IS PLUGGED IN USING THE AC ADAPTER FOR POWER. '
+
+#Launches pop up
+while [ "$choice" -ne "0" ]
+    do
+
+###################Get the deferral counter after first time#####################################################
+if [ -f $deferralCount ] 
+then
+   lastdeferralCount=$(cat "$deferralCount")
+fi
+###################End deferral counter##########################################################################
+
+
+##################################Prompt Sequence#################################################################
+if [ ! -f $deferralCount ]
+then 
+
+#You can choose which icon you would like to appear in the pop up here
+    ICON="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns"
+
+    choice=$(/Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType utility -title "$TITLE" -description "$MSG" -icon "$ICON" -button1 "Upgrade" -button2 "Defer" -defaultButton 2 -lockHUD -timeout 180)
+
+elif [ "$lastdeferralCount" -eq "1" ]
+then
+#You can choose which icon you would like to appear in the pop up here
+    ICON="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns"
+
+    choice=$(/Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType utility -title "$TITLE1" -description "$MSG" -icon "$ICON" -button1 "Upgrade" -button2 "Defer" -defaultButton 2 -lockHUD -timeout 180)
+
+elif [ "$lastdeferralCount" -eq "2" ]
+then
+#You can choose which icon you would like to appear in the pop up here
+    ICON="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns"
+
+    choice=$(/Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType utility -title "$TITLE2" -description "$MSG" -icon "$ICON" -button1 "Upgrade" -button2 "Defer" -defaultButton 2 -lockHUD -timeout 180)
+
+
+elif [ "$lastdeferralCount" -eq "3" ]
+then
+#You can choose which icon you would like to appear in the pop up here
+    ICON="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns"
+
+    choice=$(/Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType utility -title "$TITLE3" -description "$MSG" -icon "$ICON" -button1 "Upgrade" -button2 "Defer" -defaultButton 2 -lockHUD -timeout 180)
+
+
+elif [ "$lastdeferralCount" -eq "4" ]
+then
+#You can choose which icon you would like to appear in the pop up here
+    ICON="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns"
+
+    choice=$(/Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType utility -title "$TITLE4" -description "$MSG" -icon "$ICON" -button1 "Upgrade" -button2 "Defer" -defaultButton 2 -lockHUD -timeout 180)
+
+
+elif [ "$lastdeferralCount" -eq "5" ]
+then
+#You can choose which icon you would like to appear in the pop up here
+    ICON="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns"
+
+    choice=$(/Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType utility -title "$TITLE5" -description "$MSG" -icon "$ICON" -button1 "Upgrade" -button2 "Defer" -defaultButton 2 -lockHUD -timeout 180)
+
+else Sleep 4
+fi
+
+##################################Prompt End##########################################################
+
+
+###################Adds one to the deferral counter first time####################################
+	
+if [ "$choice" -eq "2" ] && [ -e "$deferralCount" ]; then
+	deferralCountVal=$(cat "$deferralCount")
+	lastdeferralCount=$((deferralCountVal+=1))
+	echo $lastdeferralCount > "$deferralCount";
+
+elif [ ! -f $deferralCount ] && [ "$choice" -eq "2" ]; then
+ 	dval=$((deferral+=1))
+        echo $dval > "$deferralCount";
+	lastdeferralCount=$(cat "$deferralCount")
+		
+ fi
+###################End deferral counter###########################################################
+
+ if [ "$choice" -ne "0" ] && [ "$lastdeferralCount" -lt "$maxdeferrals" ]; then
+        sleep 1200
+ elif [ $choice -ne "0" ]; then
+	sleep 1200
+	sudo rm  /Users/Shared/DeferralOptions/deferralCount.txt
+	sudo rmdir /Users/Shared/DeferralOptions
+(/Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType utility -title "$FINALTITLE" -description "$FINALMSG" -icon "$FINALICON" -button1 "Start" -defaultButton 2 -lockHUD -timeout 600)
+sudo /Library/Application\ Support/JAMF/Waiting\ Room/Install\ macOS\ High\ Sierra.app/Contents/Resources/startosinstall --rebootdelay 100 --agreetolicense --converttoapfs YES --nointeraction
+exit 0
+  else 
+         ((choice = "0"))
+  fi
+
+    done
+
+sudo rm  /Users/Shared/DeferralOptions/deferralCount.txt
+sudo rmdir /Users/Shared/DeferralOptions
+
+sudo /Library/Application\ Support/JAMF/Waiting\ Room/Install\ macOS\ High\ Sierra.app/Contents/Resources/startosinstall --rebootdelay 100 --agreetolicense --converttoapfs YES --nointeraction
+exit 0
+
+
+ 
